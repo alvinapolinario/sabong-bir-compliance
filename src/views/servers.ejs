@@ -1,0 +1,17 @@
+<%- include('partials/header', { title: 'Betting servers' }) %>
+<h1>Registered betting servers</h1>
+<p class="sub">Only packages signed by a registered, active key are accepted. Keys are registered on the VPS command line (see README), never through the browser.</p>
+<div class="wrap"><table>
+  <thead><tr><th>Server</th><th>Key fingerprint</th><th>Status</th><th>Registered</th><th></th></tr></thead>
+  <tbody>
+  <% servers.forEach(s => { %>
+    <tr><td><%= s.name %> <span class="badge <%= s.kind === 'legacy' ? 'b-warn' : 'b-muted' %>"><%= s.kind %></span><div class="note"><%= s.server_id %></div></td><td class="seal"><%= s.key_fingerprint %></td>
+      <td><span class="badge <%= s.status === 'active' ? 'b-ok' : 'b-bad' %>"><%= s.status %></span><% if (s.revoked_at) { %><div class="note">revoked <%= s.revoked_at %></div><% } %></td>
+      <td><%= s.registered_at %></td>
+      <td><% if (s.status === 'active') { %><form method="post" action="/admin/servers/<%= s.id %>/revoke"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="danger">Revoke key</button></form><% } %></td></tr>
+  <% }) %>
+  <% if (!servers.length) { %><tr><td colspan="5" class="note">None yet.</td></tr><% } %>
+  </tbody>
+</table></div>
+<p class="note">Revoke a key if the betting server or its signing key is lost or compromised. Packages already accepted stay valid.</p>
+<%- include('partials/footer') %>

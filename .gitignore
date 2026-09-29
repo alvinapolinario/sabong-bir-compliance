@@ -1,0 +1,16 @@
+node_modules/
+.env
+keys/*
+!keys/.gitkeep
+storage/packages/*
+!storage/packages/.gitkeep
+.DS_Store
+.sandbox-users
+.env.*
+!.env.example
+*.key
+*.pem
+*.pkg.enc
+*.sql
+*.sql.gz
+*.log

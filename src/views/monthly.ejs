@@ -1,0 +1,57 @@
+<%- include('partials/header', { title: 'Monthly report ' + r.month }) %>
+<div class="print-only"><strong><%= arena %> · BIR Compliance System · Monthly report <%= r.month %></strong></div>
+<h1>Monthly report: <%= r.month %></h1>
+<p class="sub"><%= r.from %> to <%= r.to %> · <%= r.events.length %> event(s) · from verified, sealed event reports only.</p>
+<% const nLegacy = r.events.filter(e => e.origin === 'legacy').length; if (nLegacy) { %><div class="alert a-warn"><strong><%= nLegacy %> of <%= r.events.length %> event(s) are Legacy:</strong> reconstructed after the event from database backups, not witnessed or sealed at the arena at the time. They are labelled below.</div><% } %>
+
+<form method="get" action="/reports/monthly" class="row no-print card">
+  <label>Month <input type="month" name="month" value="<%= r.month %>" required></label>
+  <button>Show</button>
+  <a class="btn btn-light" href="/reports/monthly.csv?month=<%= r.month %>">Download CSV (Excel)</a>
+  <button type="button" data-print>Print report</button>
+  <span class="note">Tip: choose “Save as PDF” in the print dialog to keep a PDF copy.</span>
+</form>
+
+<% if (r.gaps.length) { %><div class="alert a-warn">Missing packages in this month: <strong><%= r.gaps.join(', ') %></strong>. Totals are incomplete until they are uploaded.</div><% } %>
+
+<div class="grid">
+  <div class="stat"><span>Gross bets</span><b><%= peso(r.totals.gross_bets) %></b></div>
+  <div class="stat"><span>Net bets</span><b><%= peso(r.totals.net_bets) %></b></div>
+  <div class="stat"><span>Commission</span><b><%= peso(r.totals.commission) %></b></div>
+  <div class="stat"><span>House take (actual)</span><b><%= peso(r.totals.house_take) %></b></div>
+  <div class="stat"><span>Paid to bettors</span><b><%= peso(r.totals.paid) %></b></div>
+  <div class="stat"><span>Unclaimed at close</span><b><%= peso(r.totals.unclaimed) %></b></div>
+</div>
+
+<h2>Taxes for the month</h2>
+<% if (!r.taxTotals.length) { %>
+  <div class="alert a-warn">No tax rule applies to this month. Rules are added under <a href="/tax-rules">Tax rules</a> once the Treasury Office confirms the tax base and rate.</div>
+<% } else { %>
+  <div class="wrap"><table>
+    <thead><tr><th>Tax</th><th>Legal basis</th><th>Base</th><th class="n">Base amount</th><th class="n">Rate</th><th class="n">Tax due</th></tr></thead>
+    <tbody><% r.taxTotals.forEach(tx => { %>
+      <tr><td><%= tx.rule.name %> <span class="badge b-muted"><%= tx.rule.authority %><%= tx.rule.lgu ? ' · ' + tx.rule.lgu : '' %></span></td><td><%= tx.rule.legal_basis %></td>
+        <td><%= TAX_BASES[tx.rule.tax_base] %></td><td class="n"><%= peso(tx.base) %></td>
+        <td class="n"><%= (Number(tx.rule.rate) * 100).toFixed(3).replace(/\.?0+$/, '') %>%</td><td class="n"><strong><%= peso(tx.tax) %></strong></td></tr>
+    <% }) %></tbody>
+  </table></div>
+  <p class="note">Computed from the configured rules in force on each event date. Confirm with the Treasury Office before filing.</p>
+<% } %>
+
+<h2>Events</h2>
+<div class="wrap"><table>
+  <thead><tr><th>Date</th><th>Event</th><th>Package</th><th>Seal code</th><th class="n">Fights</th><th class="n">Gross</th><th class="n">Net</th><th class="n">Commission</th><th class="n">House take</th><th class="n">Paid</th><th class="n">Unclaimed</th></tr></thead>
+  <tbody>
+  <% r.events.forEach(e => { %>
+    <tr><td><%= e.event_date %></td><td><a href="/events/<%= e.package_id %>"><%= e.event_name %></a><% if (e.origin === 'legacy') { %> <span class="badge b-warn" title="Reconstructed after the event from a database backup">Legacy</span><% } %></td><td><%= e.origin === 'legacy' ? 'L' : 'S' %><%= String(e.sequence_no).padStart(4, '0') %></td>
+      <td class="seal"><%= e.seal_code %></td><td class="n"><%= e.fights_total %></td><td class="n"><%= peso(e.gross_bets) %></td><td class="n"><%= peso(e.net_bets) %></td>
+      <td class="n"><%= peso(e.commission) %></td><td class="n"><%= peso(e.house_take) %></td><td class="n"><%= peso(e.paid) %></td><td class="n"><%= peso(e.unclaimed) %></td></tr>
+  <% }) %>
+  <% if (!r.events.length) { %><tr><td colspan="11" class="note">No events in this month.</td></tr><% } %>
+  </tbody>
+  <% if (r.events.length) { %><tfoot><tr><td colspan="4">Total</td><td class="n"><%= r.events.reduce((a, e) => a + e.fights_total, 0) %></td>
+    <td class="n"><%= peso(r.totals.gross_bets) %></td><td class="n"><%= peso(r.totals.net_bets) %></td><td class="n"><%= peso(r.totals.commission) %></td>
+    <td class="n"><%= peso(r.totals.house_take) %></td><td class="n"><%= peso(r.totals.paid) %></td><td class="n"><%= peso(r.totals.unclaimed) %></td></tr></tfoot><% } %>
+</table></div>
+<div class="print-only" style="margin-top:40px">Prepared by: ____________________ &nbsp;&nbsp; Reviewed by (Treasury): ____________________ &nbsp;&nbsp; Date: __________</div>
+<%- include('partials/footer') %>

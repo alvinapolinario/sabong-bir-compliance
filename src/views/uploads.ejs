@@ -1,0 +1,17 @@
+<%- include('partials/header', { title: 'Upload log' }) %>
+<h1>Upload log</h1>
+<p class="sub">Every upload attempt, including rejected ones. This log cannot be edited.</p>
+<div class="wrap"><table>
+  <thead><tr><th>When</th><th>By</th><th>File</th><th>Server / package</th><th>Result</th><th>Reasons</th></tr></thead>
+  <tbody>
+  <% rows.forEach(a => { const reasons = typeof a.reasons === 'string' ? JSON.parse(a.reasons) : (a.reasons || []); %>
+    <tr><td><%= a.uploaded_at %></td><td><%= a.username %><div class="note"><%= a.uploaded_from %></div></td>
+      <td><%= a.file_name %><div class="hash"><%= a.file_sha256.slice(0, 16) %>…</div></td>
+      <td><%= a.server_id || '—' %><%= a.sequence_no ? ' · S' + String(a.sequence_no).padStart(4, '0') : '' %></td>
+      <td><span class="badge <%= a.result === 'accepted' ? 'b-ok' : a.result === 'duplicate' ? 'b-muted' : 'b-bad' %>"><%= a.result %></span></td>
+      <td class="note"><%= reasons.map(r => r.name.replace(/_/g, ' ') + (r.detail && r.detail !== 'ok' ? ': ' + r.detail : '')).join(' · ') %></td></tr>
+  <% }) %>
+  <% if (!rows.length) { %><tr><td colspan="6" class="note">No uploads yet.</td></tr><% } %>
+  </tbody>
+</table></div>
+<%- include('partials/footer') %>

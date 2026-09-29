@@ -1,0 +1,40 @@
+<%- include('partials/header', { title: 'Upload package' }) %>
+<h1>Upload an event package</h1>
+<p class="sub">Upload the <code>.pkg.enc</code> file downloaded from the betting server's Closing Reports page. It is decrypted and verified before anything is stored.</p>
+
+<% if (outcome) { %>
+  <% if (outcome.result === 'accepted' || outcome.result === 'duplicate') { %>
+    <div class="alert a-ok">
+      <strong><%= outcome.result === 'accepted' ? 'Accepted and stored.' : 'Already received earlier: this is the original acknowledgment.' %></strong>
+      Event #<%= outcome.event.event_id %> “<%= outcome.event.name %>” (<%= outcome.event.date %>).
+    </div>
+    <div class="card">
+      <h2 style="margin-top:0">1. Compare the seal code with the signed paper report</h2>
+      <div class="big-code"><%= outcome.sealCode %></div>
+      <p class="note">It must match section F of the printed closing report signed at the arena. If it does not match, stop and report it.</p>
+      <h2>2. Enter this acknowledgment code on the betting server</h2>
+      <div class="big-code"><%= outcome.ackCode %></div>
+      <p class="note">Betting server → Closing Reports → Ack code. The event can be archived there only after this code is entered.</p>
+      <p><a class="btn btn-light" href="/events/<%= outcome.packageId %>">Open the event report</a></p>
+    </div>
+  <% } else { %>
+    <div class="alert a-bad"><strong>Rejected. Nothing was stored.</strong> The attempt was recorded in the upload log.</div>
+  <% } %>
+  <div class="card">
+    <h2 style="margin-top:0">Verification</h2>
+    <ul class="checks">
+      <% outcome.checks.forEach(c => { %>
+        <li><span class="badge <%= c.passed ? 'b-ok' : 'b-bad' %>"><%= c.passed ? 'PASS' : 'FAIL' %></span> <%= c.name.replace(/_/g, ' ') %><% if (!c.passed || c.name === 'already_received') { %>: <%= c.detail %><% } %></li>
+      <% }) %>
+    </ul>
+  </div>
+<% } %>
+
+<div class="card no-print">
+  <form method="post" action="/upload" enctype="multipart/form-data" class="row">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <label>Package file (.pkg.enc) <input type="file" name="package" accept=".enc,.pkg.enc" required></label>
+    <button>Upload and verify</button>
+  </form>
+</div>
+<%- include('partials/footer') %>

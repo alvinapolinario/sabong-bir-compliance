@@ -1,0 +1,30 @@
+{
+  "name": "bir-compliance",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Blueknife Gallera BIR Compliance System: receives, verifies and reports sealed event closing packages from the onsite betting server.",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "migrate": "node scripts/migrate.js",
+    "keygen": "node scripts/keygen.js",
+    "server:register": "node scripts/register-server.js",
+    "user:create": "node scripts/create-user.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-mysql-session": "^3.0.3",
+    "express-rate-limit": "^7.4.1",
+    "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "libsodium-wrappers": "^0.7.15",
+    "multer": "^2.0.2",
+    "mysql2": "^3.11.5"
+  }
+}

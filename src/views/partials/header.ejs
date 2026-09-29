@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= typeof title !== 'undefined' ? title + ' · ' : '' %><%= arena %> BIR Compliance</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><strong><%= arena %></strong><span>BIR Compliance System</span></div>
+  <% if (user) { %>
+  <nav>
+    <a href="/" class="<%= path === '/' ? 'on' : '' %>">Dashboard</a>
+    <% if (['admin','accounting'].includes(user.role)) { %><a href="/upload" class="<%= path === '/upload' ? 'on' : '' %>">Upload package</a><% } %>
+    <a href="/events" class="<%= path.startsWith('/events') ? 'on' : '' %>">Events</a>
+    <a href="/reports/monthly" class="<%= path.startsWith('/reports') ? 'on' : '' %>">Monthly report</a>
+    <a href="/tax-rules" class="<%= path === '/tax-rules' ? 'on' : '' %>">Tax rules</a>
+    <a href="/uploads" class="<%= path === '/uploads' ? 'on' : '' %>">Upload log</a>
+    <% if (['admin','treasury'].includes(user.role)) { %><a href="/audit" class="<%= path === '/audit' ? 'on' : '' %>">Audit trail</a><% } %>
+    <% if (user.role === 'admin') { %>
+      <a href="/admin/users" class="<%= path === '/admin/users' ? 'on' : '' %>">Users</a>
+      <a href="/admin/servers" class="<%= path === '/admin/servers' ? 'on' : '' %>">Betting servers</a>
+    <% } %>
+  </nav>
+  <div class="who">
+    <span><%= user.fullName %> · <%= ROLE_LABEL[user.role] %></span>
+    <a href="/account/password">Password</a>
+    <form method="post" action="/logout"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="link">Sign out</button></form>
+  </div>
+  <% } %>
+</header>
+<main>

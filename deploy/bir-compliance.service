@@ -1,0 +1,34 @@
+[Unit]
+Description=Blueknife Gallera BIR Compliance System
+After=network-online.target mariadb.service
+Wants=network-online.target
+Requires=mariadb.service
+
+[Service]
+Type=simple
+User=bircomp
+Group=bircomp
+WorkingDirectory=/opt/bir-compliance
+Environment=NODE_ENV=production
+Environment=TZ=Asia/Manila
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=3
+
+# Hardening: the app can only write to its storage folder.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+ReadWritePaths=/opt/bir-compliance/storage
+CapabilityBoundingSet=
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target

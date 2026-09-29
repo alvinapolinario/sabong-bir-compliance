@@ -1,0 +1,90 @@
+<%- include('partials/header', { title: p.event.name }) %>
+<% const t = p.totals, x = p.exceptions || {}; const pct = (Number(p.event.commission_rate) * 100).toFixed(2).replace(/\.?0+$/, ''); %>
+<div class="print-only"><strong><%= arena %> · BIR Compliance System</strong> · verified copy of the sealed closing report</div>
+<h1><%= p.event.name %><% if (p.origin && p.origin.type === 'legacy_backup') { %> <span class="badge b-warn">Legacy</span><% } %></h1>
+<% if (p.origin && p.origin.type === 'legacy_backup') { %><div class="alert a-warn"><strong>Legacy report.</strong> <%= p.origin.note %> Reconstructed on <%= p.origin.reconstructed_at %> from backup file <code><%= p.origin.backup_file %></code><div class="hash">Backup SHA-256 <%= p.origin.backup_sha256 %></div></div><% } %>
+<p class="sub">Event #<%= p.event.event_id %> · <%= p.event.date %> · commission <%= pct %>% · <%= t.fights_total %> fights<%= t.fights_unused ? ' (' + t.fights_unused + ' unused)' : '' %> ·
+  closed <%= p.closed_at %> by <%= p.closed_by %><%= p.approved_by ? ' / approved by ' + p.approved_by : '' %></p>
+
+<div class="card">
+  <div class="grid">
+    <div><span class="note">Seal code (compare with the signed paper report)</span><div class="big-code"><%= pkg.seal_code %></div></div>
+    <div><span class="note">Acknowledgment code</span><div class="big-code"><%= pkg.ack_code %></div></div>
+  </div>
+  <p class="note">Package <%= p.origin && p.origin.type === 'legacy_backup' ? 'L' : 'S' %><%= String(pkg.sequence_no).padStart(4, '0') %> from <%= pkg.server_id %> (key <%= pkg.key_fingerprint %>) · received <%= pkg.received_at %> by <%= pkg.received_by_name %> ·
+    <a class="no-print" href="/events/<%= pkg.id %>/ack.json">download signed acknowledgment</a></p>
+  <p class="no-print"><a class="btn" href="/events/<%= pkg.id %>/print" target="_blank">Print closing report</a></p>
+  <p class="hash">Payload SHA-256 <%= pkg.payload_sha256 %><br>Previous seal <%= pkg.prev_payload_sha256 %><br>Detail records SHA-256 <%= p.detail && p.detail.sha256 %> (kept at the arena)</p>
+</div>
+
+<h2>Event totals</h2>
+<div class="grid">
+  <div class="stat"><span>Gross bets</span><b><%= peso(t.gross_bets) %></b></div>
+  <div class="stat"><span>Voided (<%= x.voids_count || 0 %>)</span><b><%= peso(t.voided_bets) %></b></div>
+  <div class="stat"><span>Net bets</span><b><%= peso(t.net_bets) %></b></div>
+  <div class="stat"><span>Refunds (draw / cancelled)</span><b><%= peso(t.refunds) %></b></div>
+  <div class="stat"><span>Winnings due</span><b><%= peso(t.winnings) %></b></div>
+  <div class="stat"><span>Commission at <%= pct %>%</span><b><%= peso(t.commission) %></b></div>
+  <div class="stat"><span>Rounding / odds adjustment</span><b class="<%= Number(t.breakage) < 0 ? 'neg' : '' %>"><%= peso(t.breakage) %></b></div>
+  <div class="stat"><span>House take (actual)</span><b><%= peso(report.house_take) %></b></div>
+  <div class="stat"><span>Paid out</span><b><%= peso(t.paid) %></b></div>
+  <div class="stat"><span>Unclaimed at close</span><b><%= peso(t.unclaimed) %></b></div>
+</div>
+
+<h2>Taxes (from configured rules)</h2>
+<% if (!taxes.length) { %>
+  <div class="alert a-warn">No tax rule is configured for <%= p.event.date %>. An administrator adds rules under <a href="/tax-rules">Tax rules</a> once the Treasury Office confirms the base and rate.</div>
+<% } else { %>
+  <div class="wrap"><table>
+    <thead><tr><th>Tax</th><th>Legal basis</th><th>Base</th><th class="n">Base amount</th><th class="n">Rate</th><th class="n">Tax</th></tr></thead>
+    <tbody><% taxes.forEach(tx => { %>
+      <tr><td><%= tx.rule.name %> <span class="badge b-muted"><%= tx.rule.authority %></span></td><td><%= tx.rule.legal_basis %></td><td><%= tx.rule.tax_base.replace('_', ' ') %></td>
+        <td class="n"><%= peso(tx.base) %></td><td class="n"><%= (Number(tx.rule.rate) * 100).toFixed(3).replace(/\.?0+$/, '') %>%</td><td class="n"><strong><%= peso(tx.tax) %></strong></td></tr>
+    <% }) %></tbody>
+  </table></div>
+  <p class="note">Computed from the rules in force on the event date. Confirm with the Treasury Office before filing.</p>
+<% } %>
+
+<h2>Per-fight summary</h2>
+<div class="wrap"><table>
+  <thead><tr><th class="n">Fight</th><th class="n">Meron</th><th class="n">Wala</th><th class="n">Net pool</th><th>Result</th><th class="n">Odds</th><th class="n">Commission</th><th class="n">House take</th><th class="n">Refunds</th><th class="n">Winnings</th><th class="n">Paid</th><th class="n">Unclaimed</th><th class="n">Corr.</th></tr></thead>
+  <tbody>
+  <% p.fights.forEach(f => { const a = f.audit || {}; %>
+    <tr>
+      <td class="n"><%= f.fight_no %></td><td class="n"><%= peso(f.meron_total) %></td><td class="n"><%= peso(f.wala_total) %></td><td class="n"><%= peso(f.net_pool) %></td>
+      <td><%= f.winner || (f.unused ? 'Unused (no bets)' : f.status) %></td>
+      <td class="n"><%= f.winner ? (f.winner === 'Meron' ? f.meron_odds : f.wala_odds) : '—' %></td>
+      <td class="n"><%= peso(f.commission) %></td><td class="n"><%= f.house_take !== undefined ? peso(f.house_take) : '—' %></td><td class="n"><%= peso(f.refunds) %></td>
+      <td class="n"><%= peso(f.winnings) %></td><td class="n"><%= peso(f.paid) %></td><td class="n"><%= peso(f.unclaimed) %></td>
+      <td class="n <%= a.result_corrections ? 'neg' : '' %>"><%= a.result_corrections || 0 %></td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table></div>
+
+<h2>Teller summary</h2>
+<div class="wrap"><table>
+  <thead><tr><th>Teller</th><th class="n">Opening</th><th class="n">Cash-in</th><th class="n">Cash-out</th><th class="n">Net bets</th><th class="n">Payouts</th><th class="n">Expected cash</th><th class="n">Counted</th><th class="n">Short/over</th></tr></thead>
+  <tbody>
+  <% p.tellers.forEach(r => { %>
+    <tr><td><%= r.teller_code %></td><td class="n"><%= peso(r.opening_cash) %></td><td class="n"><%= peso(r.cash_in) %></td><td class="n"><%= peso(r.cash_out) %></td>
+      <td class="n"><%= peso(r.net_bets) %></td><td class="n"><%= peso(r.payouts) %></td><td class="n"><%= peso(r.expected_cash) %></td>
+      <td class="n"><%= r.counted_cash === null ? '—' : peso(r.counted_cash) %></td><td class="n"><%= r.short_over === null ? '—' : peso(r.short_over) %></td></tr>
+  <% }) %>
+  </tbody>
+</table></div>
+<p class="note">Tellers are identified by code only; names stay at the arena.</p>
+
+<h2>Checks</h2>
+<div class="grid">
+  <div class="card">
+    <strong>Received here</strong>
+    <ul class="checks"><% checks.forEach(c => { %><li><span class="badge <%= c.passed ? 'b-ok' : 'b-bad' %>"><%= c.passed ? 'PASS' : 'FAIL' %></span> <%= c.name.replace(/_/g, ' ') %></li><% }) %></ul>
+  </div>
+  <div class="card">
+    <strong>Recorded by the betting server at closing</strong>
+    <ul class="checks"><% (p.checks || []).forEach(c => { %><li><span class="badge <%= c.passed ? 'b-ok' : 'b-warn' %>"><%= c.passed ? 'PASS' : 'FLAG' %></span> <%= c.name.replace(/_/g, ' ') %><% if (!c.passed) { %>: <span class="note"><%= c.detail %></span><% } %></li><% }) %></ul>
+  </div>
+</div>
+<p class="note">Exceptions: <%= x.voids_count || 0 %> voids · <%= x.result_corrections || 0 %> result corrections · <%= x.betting_reopens || 0 %> betting re-opens · <%= x.reprints || 0 %> reprints · <%= x.duplicate_claims || 0 %> duplicate payouts.</p>
+<%- include('partials/footer') %>

@@ -1,0 +1,26 @@
+<%- include('partials/header', { title: 'Events' }) %>
+<h1>Event reports</h1>
+<p class="sub">Every event received from the betting server, verified and stored unchanged.</p>
+<div class="wrap"><table>
+  <thead><tr><th>Date</th><th>Event</th><th>Package</th><th>Seal code</th><th class="n">Fights</th><th class="n">Net bets</th><th class="n">Commission</th><th class="n">House take</th><th class="n">Unclaimed</th><th>Received</th><th>Flags</th><th></th></tr></thead>
+  <tbody>
+  <% rows.forEach(r => { %>
+    <tr>
+      <td><%= r.event_date %></td>
+      <td><a href="/events/<%= r.package_id %>"><%= r.event_name %></a><% if (r.origin === 'legacy') { %> <span class="badge b-warn" title="Reconstructed after the event from a database backup">Legacy</span><% } %><div class="note"><%= r.server_id %> · event #<%= r.event_id %></div></td>
+      <td><%= r.origin === 'legacy' ? 'L' : 'S' %><%= String(r.sequence_no).padStart(4, '0') %></td>
+      <td class="seal"><%= r.seal_code %></td>
+      <td class="n"><%= r.fights_total %></td>
+      <td class="n"><%= peso(r.net_bets) %></td>
+      <td class="n"><%= peso(r.commission) %></td>
+      <td class="n"><%= peso(r.house_take) %></td>
+      <td class="n"><%= peso(r.unclaimed) %></td>
+      <td><%= r.received_at %></td>
+      <td><% if (r.flagged_checks) { %><span class="badge b-warn"><%= r.flagged_checks %></span><% } else { %><span class="badge b-ok">0</span><% } %></td>
+      <td><a href="/events/<%= r.package_id %>/print" target="_blank">Print</a></td>
+    </tr>
+  <% }) %>
+  <% if (!rows.length) { %><tr><td colspan="12" class="note">No event reports yet.</td></tr><% } %>
+  </tbody>
+</table></div>
+<%- include('partials/footer') %>

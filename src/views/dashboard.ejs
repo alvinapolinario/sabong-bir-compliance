@@ -1,0 +1,46 @@
+<%- include('partials/header', { title: 'Dashboard' }) %>
+<h1>Dashboard</h1>
+<p class="sub">This month (<%= summary.month %>) from verified, sealed event reports.</p>
+
+<div class="grid">
+  <div class="stat"><span>Events received</span><b><%= summary.events.length %></b></div>
+  <div class="stat"><span>Net bets</span><b>₱<%= peso(summary.totals.net_bets) %></b></div>
+  <div class="stat"><span>House take (actual)</span><b>₱<%= peso(summary.totals.house_take) %></b></div>
+  <div class="stat"><span>Paid to bettors</span><b>₱<%= peso(summary.totals.paid) %></b></div>
+  <div class="stat"><span>Unclaimed at close</span><b>₱<%= peso(summary.totals.unclaimed) %></b></div>
+</div>
+
+<% if (summary.gaps.length) { %>
+  <div class="alert a-warn" style="margin-top:16px">Missing event packages this month: <strong><%= summary.gaps.join(', ') %></strong>. Upload them in order.</div>
+<% } %>
+<% if (rejected.length) { %>
+  <div class="alert a-bad" style="margin-top:16px"><strong><%= rejected.length %> rejected upload(s)</strong> in the last 30 days. See the <a href="/uploads">upload log</a>.</div>
+<% } %>
+
+<h2>Betting servers</h2>
+<div class="wrap"><table>
+  <thead><tr><th>Server</th><th>Status</th><th>Last package</th><th>Received</th></tr></thead>
+  <tbody>
+  <% servers.forEach(s => { %>
+    <tr><td><%= s.name %><div class="note"><%= s.server_id %></div></td>
+      <td><span class="badge <%= s.status === 'active' ? 'b-ok' : 'b-bad' %>"><%= s.status %></span></td>
+      <td><%= s.last_seq ? (s.kind === 'legacy' ? 'L' : 'S') + String(s.last_seq).padStart(4, '0') : '—' %></td><td><%= s.last_received || '—' %></td></tr>
+  <% }) %>
+  <% if (!servers.length) { %><tr><td colspan="4" class="note">No betting server registered yet.</td></tr><% } %>
+  </tbody>
+</table></div>
+
+<h2>Latest event reports</h2>
+<div class="wrap"><table>
+  <thead><tr><th>Date</th><th>Event</th><th>Package</th><th>Seal code</th><th class="n">Net bets</th><th class="n">House take</th><th>Flags</th></tr></thead>
+  <tbody>
+  <% recent.forEach(r => { %>
+    <tr><td><%= r.event_date %></td><td><a href="/events/<%= r.package_id %>"><%= r.event_name %></a><% if (r.origin === 'legacy') { %> <span class="badge b-warn" title="Reconstructed after the event from a database backup">Legacy</span><% } %></td>
+      <td><%= r.origin === 'legacy' ? 'L' : 'S' %><%= String(r.sequence_no).padStart(4, '0') %></td><td class="seal"><%= r.seal_code %></td>
+      <td class="n"><%= peso(r.net_bets) %></td><td class="n"><%= peso(r.house_take) %></td>
+      <td><% if (r.flagged_checks) { %><span class="badge b-warn"><%= r.flagged_checks %> flagged</span><% } else { %><span class="badge b-ok">clean</span><% } %></td></tr>
+  <% }) %>
+  <% if (!recent.length) { %><tr><td colspan="7" class="note">No event reports yet.</td></tr><% } %>
+  </tbody>
+</table></div>
+<%- include('partials/footer') %>

@@ -1,0 +1,41 @@
+<%- include('partials/header', { title: 'Tax rules' }) %>
+<h1>Tax rules</h1>
+<p class="sub">Tax rates are never hard-coded. Each rule names its legal basis and applies to events on or after its effective date. Rules are retired, never edited or deleted.</p>
+<% if (error) { %><div class="alert a-bad"><%= error %></div><% } %>
+
+<div class="wrap"><table>
+  <thead><tr><th>Tax</th><th>Authority</th><th>Legal basis</th><th>Base</th><th class="n">Rate</th><th>Effective</th><th>Status</th><% if (user.role === 'admin') { %><th></th><% } %></tr></thead>
+  <tbody>
+  <% rules.forEach(t => { %>
+    <tr>
+      <td><%= t.name %></td><td><%= t.authority %><%= t.lgu ? ' · ' + t.lgu : '' %></td><td><%= t.legal_basis %></td><td><%= TAX_BASES[t.tax_base] %></td>
+      <td class="n"><%= (Number(t.rate) * 100).toFixed(3).replace(/\.?0+$/, '') %>%</td>
+      <td><%= t.effective_from %> → <%= t.effective_to || 'open' %></td>
+      <td><% if (t.retired_at) { %><span class="badge b-muted">retired <%= t.retired_at.slice(0, 10) %></span><% } else { %><span class="badge b-ok">in force</span><% } %></td>
+      <% if (user.role === 'admin') { %><td><% if (!t.retired_at) { %>
+        <form method="post" action="/tax-rules/<%= t.id %>/retire"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="danger">Retire</button></form>
+      <% } %></td><% } %>
+    </tr>
+  <% }) %>
+  <% if (!rules.length) { %><tr><td colspan="8" class="note">No tax rules yet. Add them once the Treasury Office confirms the tax base and rate.</td></tr><% } %>
+  </tbody>
+</table></div>
+
+<% if (user.role === 'admin') { %>
+<h2>Add a rule</h2>
+<div class="card">
+  <form method="post" action="/tax-rules" class="row">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <label>Name <input name="name" required maxlength="120" placeholder="e.g. Amusement tax"></label>
+    <label>Authority <select name="authority"><option>LGU</option><option>BIR</option></select></label>
+    <label>LGU (if any) <input name="lgu" maxlength="120" placeholder="e.g. City of …"></label>
+    <label>Legal basis <input name="legal_basis" required maxlength="200" placeholder="e.g. Ordinance No. …, Sec. …"></label>
+    <label>Tax base <select name="tax_base"><% Object.entries(TAX_BASES).forEach(([k, v]) => { %><option value="<%= k %>"><%= v %></option><% }) %></select></label>
+    <label>Rate (%) <input name="rate_percent" type="number" step="0.001" min="0.001" max="99.999" required></label>
+    <label>Effective from <input name="effective_from" type="date" required></label>
+    <label>Effective to (optional) <input name="effective_to" type="date"></label>
+    <button>Add rule</button>
+  </form>
+</div>
+<% } %>
+<%- include('partials/footer') %>
