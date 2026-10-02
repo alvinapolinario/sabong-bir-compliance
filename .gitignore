@@ -12,5 +12,6 @@ storage/packages/*
 *.pem
 *.pkg.enc
 *.sql
+!migrations/*.sql
 *.sql.gz
 *.log
