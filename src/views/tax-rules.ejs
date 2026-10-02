@@ -10,10 +10,12 @@
     <tr>
       <td><%= t.name %><% if (formulaText(t)) { %><br><small class="note"><%= formulaText(t) %></small><% } %></td><td><%= t.authority %><%= t.lgu ? ' · ' + t.lgu : '' %></td><td><%= t.legal_basis %></td><td><%= TAX_BASES[t.tax_base] %></td>
       <td class="n"><%= rateText(t) %></td>
-      <td><%= t.effective_from %> → <%= t.effective_to || 'open' %></td>
+      <td><% if (t.effective_to && t.effective_to < t.effective_from) { %>never applied<% } else { %><%= t.effective_from %> → <%= t.effective_to || 'open' %><% } %></td>
       <td><% if (t.retired_at) { %><span class="badge b-muted">retired <%= t.retired_at.slice(0, 10) %></span><% } else { %><span class="badge b-ok">in force</span><% } %></td>
       <% if (user.role === 'admin') { %><td><% if (!t.retired_at) { %>
-        <form method="post" action="/tax-rules/<%= t.id %>/retire"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="danger">Retire</button></form>
+        <form method="post" action="/tax-rules/<%= t.id %>/retire" class="row"><input type="hidden" name="_csrf" value="<%= csrf %>">
+          <label>Last day in force <input type="date" name="last_day" title="Empty = yesterday. The day before the start date = never applied (entered in error)."></label>
+          <button class="danger">Retire</button></form>
       <% } %></td><% } %>
     </tr>
   <% }) %>

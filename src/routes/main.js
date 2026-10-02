@@ -185,9 +185,18 @@ router.post('/tax-rules', requireRole('admin'), async (req, res, next) => {
 
 router.post('/tax-rules/:id(\\d+)/retire', requireRole('admin'), async (req, res, next) => {
   try {
-    await db.query(`UPDATE tax_rules SET retired_at = NOW(), retired_by = ?, effective_to = COALESCE(effective_to, CURDATE() - INTERVAL 1 DAY)
-      WHERE id = ? AND retired_at IS NULL`, [req.session.user.id, req.params.id]);
-    await audit(req, 'tax_rule_retired', 'tax_rule', req.params.id);
+    // Optional last day in force (default: yesterday). The day before the rule's start
+    // means it never applied (e.g. entered in error); it must not end before that.
+    const lastDay = /^\d{4}-\d{2}-\d{2}$/.test(req.body.last_day || '') ? req.body.last_day : null;
+    const [res1] = await db.pool.query(`UPDATE tax_rules SET retired_at = NOW(), retired_by = ?,
+        effective_to = COALESCE(?, effective_to, CURDATE() - INTERVAL 1 DAY)
+      WHERE id = ? AND retired_at IS NULL AND (? IS NULL OR ? >= effective_from - INTERVAL 1 DAY)`,
+      [req.session.user.id, lastDay, req.params.id, lastDay, lastDay]);
+    if (!res1.affectedRows) {
+      const rules = await db.query('SELECT * FROM tax_rules ORDER BY retired_at IS NOT NULL, effective_from DESC');
+      return res.status(422).render('tax-rules', { rules, TAX_BASES: reports.TAX_BASES, error: 'Not retired: the last day in force cannot be earlier than the day before the rule starts.' });
+    }
+    await audit(req, 'tax_rule_retired', 'tax_rule', req.params.id, { last_day: lastDay || 'yesterday' });
     res.redirect('/tax-rules');
   } catch (e) { next(e); }
 });
