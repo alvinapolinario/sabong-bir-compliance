@@ -14,7 +14,8 @@ const { ready } = require('./crypto');
 
 const app = express();
 app.disable('x-powered-by');
-app.set('trust proxy', 'loopback'); // nginx on the same machine
+// nginx on the same machine. In Docker nginx arrives from the bridge gateway: TRUST_PROXY=loopback,uniquelocal
+app.set('trust proxy', process.env.TRUST_PROXY || 'loopback');
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
