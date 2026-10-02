@@ -129,8 +129,8 @@
     <table>
       <thead><tr><th class="l">Tax</th><th class="l">Legal basis</th><th class="l">Base</th><th>Base amount</th><th>Rate</th><th>Tax</th></tr></thead>
       <tbody><% taxes.forEach(tx => { %>
-        <tr><td class="l"><%= tx.rule.name %> (<%= tx.rule.authority %>)</td><td class="l"><%= tx.rule.legal_basis %></td><td class="l"><%= tx.rule.tax_base.replace('_', ' ') %></td>
-          <td><%= peso(tx.base) %></td><td><%= (Number(tx.rule.rate) * 100).toFixed(3).replace(/\.?0+$/, '') %>%</td><td><strong><%= peso(tx.tax) %></strong></td></tr>
+        <tr><td class="l"><%= tx.rule.name %> (<%= tx.rule.authority %>)<% if (formulaText(tx.rule)) { %><br><small><%= formulaText(tx.rule) %></small><% } %></td><td class="l"><%= tx.rule.legal_basis %></td><td class="l"><%= tx.rule.tax_base.replace('_', ' ') %></td>
+          <td><%= peso(tx.base) %></td><td><%= rateText(tx.rule) %></td><td><strong><%= peso(tx.tax) %></strong></td></tr>
       <% }) %></tbody>
     </table>
     <p class="hash">Computed from the rules in force on the event date. Confirm with the Treasury Office before filing.</p>

@@ -38,8 +38,8 @@
   <div class="wrap"><table>
     <thead><tr><th>Tax</th><th>Legal basis</th><th>Base</th><th class="n">Base amount</th><th class="n">Rate</th><th class="n">Tax</th></tr></thead>
     <tbody><% taxes.forEach(tx => { %>
-      <tr><td><%= tx.rule.name %> <span class="badge b-muted"><%= tx.rule.authority %></span></td><td><%= tx.rule.legal_basis %></td><td><%= tx.rule.tax_base.replace('_', ' ') %></td>
-        <td class="n"><%= peso(tx.base) %></td><td class="n"><%= (Number(tx.rule.rate) * 100).toFixed(3).replace(/\.?0+$/, '') %>%</td><td class="n"><strong><%= peso(tx.tax) %></strong></td></tr>
+      <tr><td><%= tx.rule.name %> <span class="badge b-muted"><%= tx.rule.authority %></span><% if (formulaText(tx.rule)) { %><br><small class="note"><%= formulaText(tx.rule) %></small><% } %></td><td><%= tx.rule.legal_basis %></td><td><%= tx.rule.tax_base.replace('_', ' ') %></td>
+        <td class="n"><%= peso(tx.base) %></td><td class="n"><%= rateText(tx.rule) %></td><td class="n"><strong><%= peso(tx.tax) %></strong></td></tr>
     <% }) %></tbody>
   </table></div>
   <p class="note">Computed from the rules in force on the event date. Confirm with the Treasury Office before filing.</p>

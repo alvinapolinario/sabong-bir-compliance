@@ -1,6 +1,6 @@
 'use strict';
 const db = require('./db');
-const { cents, fmt, percentOf } = require('./money');
+const { cents, fmt, percentOf, ratePercent } = require('./money');
 
 const MONEY_COLS = ['gross_bets', 'voided_bets', 'net_bets', 'refunds', 'winnings', 'commission', 'breakage', 'house_take', 'payable', 'paid', 'unclaimed'];
 const TAX_BASES = {
@@ -9,6 +9,27 @@ const TAX_BASES = {
   net_bets: 'Net bets (after voids)',
   gross_bets: 'Gross bets (before voids)',
 };
+
+const BASE_SHORT = { house_take: 'House take', commission: 'Commission', net_bets: 'Net bets', gross_bets: 'Gross bets' };
+
+function factorsOf(rule) {
+  if (!rule.factors) return null;
+  try { const f = JSON.parse(rule.factors); return Array.isArray(f) && f.length ? f : null; } catch { return null; }
+}
+
+/** "7% × 14% × 1% = 0.0098%" for a chained rule, "1%" for a single rate. */
+function rateText(rule) {
+  const f = factorsOf(rule);
+  const total = `${ratePercent(rule.rate)}%`;
+  return f && f.length > 1 ? `${f.map((x) => `${x.pct}%`).join(' × ')} = ${total}` : total;
+}
+
+/** "Gross bets × 7% (Commission) × 14% (Operator Safety Net) × 1% (LGU tax)", or null for a single unlabeled rate. */
+function formulaText(rule) {
+  const f = factorsOf(rule);
+  if (!f || (f.length === 1 && !f[0].label)) return null;
+  return [BASE_SHORT[rule.tax_base] || rule.tax_base, ...f.map((x) => `${x.pct}%${x.label ? ` (${x.label})` : ''}`)].join(' × ');
+}
 
 async function rulesFor(date) {
   return db.query(
@@ -74,4 +95,4 @@ function csvMonthly(r) {
   return [head, ...rows, total].map((row) => row.map(esc).join(',')).join('\r\n') + '\r\n';
 }
 
-module.exports = { monthly, csvMonthly, taxesFor, TAX_BASES, MONEY_COLS };
+module.exports = { monthly, csvMonthly, taxesFor, TAX_BASES, MONEY_COLS, rateText, formulaText };

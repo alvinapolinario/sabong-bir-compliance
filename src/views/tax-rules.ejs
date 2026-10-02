@@ -1,6 +1,6 @@
 <%- include('partials/header', { title: 'Tax rules' }) %>
 <h1>Tax rules</h1>
-<p class="sub">Tax rates are never hard-coded. Each rule names its legal basis and applies to events on or after its effective date. Rules are retired, never edited or deleted.</p>
+<p class="sub">Tax rates are never hard-coded. Each rule names its legal basis and applies to events on or after its effective date. Rules are retired, never edited or deleted. A rate can be a chain of percentages applied in order to the base, e.g. gross bets × 7% × 14% × 1%: enter <code>7 x 14 x 1</code>. Each step is kept exactly; only the final tax is rounded to the centavo.</p>
 <% if (error) { %><div class="alert a-bad"><%= error %></div><% } %>
 
 <div class="wrap"><table>
@@ -8,8 +8,8 @@
   <tbody>
   <% rules.forEach(t => { %>
     <tr>
-      <td><%= t.name %></td><td><%= t.authority %><%= t.lgu ? ' · ' + t.lgu : '' %></td><td><%= t.legal_basis %></td><td><%= TAX_BASES[t.tax_base] %></td>
-      <td class="n"><%= (Number(t.rate) * 100).toFixed(3).replace(/\.?0+$/, '') %>%</td>
+      <td><%= t.name %><% if (formulaText(t)) { %><br><small class="note"><%= formulaText(t) %></small><% } %></td><td><%= t.authority %><%= t.lgu ? ' · ' + t.lgu : '' %></td><td><%= t.legal_basis %></td><td><%= TAX_BASES[t.tax_base] %></td>
+      <td class="n"><%= rateText(t) %></td>
       <td><%= t.effective_from %> → <%= t.effective_to || 'open' %></td>
       <td><% if (t.retired_at) { %><span class="badge b-muted">retired <%= t.retired_at.slice(0, 10) %></span><% } else { %><span class="badge b-ok">in force</span><% } %></td>
       <% if (user.role === 'admin') { %><td><% if (!t.retired_at) { %>
@@ -31,7 +31,8 @@
     <label>LGU (if any) <input name="lgu" maxlength="120" placeholder="e.g. City of …"></label>
     <label>Legal basis <input name="legal_basis" required maxlength="200" placeholder="e.g. Ordinance No. …, Sec. …"></label>
     <label>Tax base <select name="tax_base"><% Object.entries(TAX_BASES).forEach(([k, v]) => { %><option value="<%= k %>"><%= v %></option><% }) %></select></label>
-    <label>Rate (%) <input name="rate_percent" type="number" step="0.001" min="0.001" max="99.999" required></label>
+    <label>Rate (%) <input name="rate_percent" required maxlength="60" placeholder="e.g. 1   or   7 x 14 x 1" title="One percentage, or several multiplied in order: 7 x 14 x 1"></label>
+    <label>Step labels (optional) <input name="rate_labels" maxlength="200" placeholder="e.g. Commission; Operator Safety Net; LGU tax"></label>
     <label>Effective from <input name="effective_from" type="date" required></label>
     <label>Effective to (optional) <input name="effective_to" type="date"></label>
     <button>Add rule</button>

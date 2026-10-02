@@ -8,7 +8,7 @@ const { audit } = require('../audit');
 const { requireRole, csrfAfterUpload, login, hashPassword, passwordProblem } = require('../auth');
 const { ingestUpload } = require('../ingest');
 const reports = require('../reports');
-const { cents, fmt } = require('../money');
+const { cents, fmt, rateFromPercents } = require('../money');
 
 const router = express.Router();
 const ALL = ['admin', 'accounting', 'treasury'];
@@ -152,12 +152,22 @@ router.get('/tax-rules', requireRole(...ALL), async (req, res, next) => {
 router.post('/tax-rules', requireRole('admin'), async (req, res, next) => {
   try {
     const b = req.body;
-    const rate = Number(b.rate_percent) / 100;
     const problems = [];
+    // "1" or a chain applied in order: "7 x 14 x 1" (also × or *). Labels optional: "Commission; Operator Safety Net; LGU tax".
+    const pcts = String(b.rate_percent || '').trim().split(/\s*[x×*]\s*/i).filter(Boolean);
+    const labels = String(b.rate_labels || '').split(';').map((s) => s.trim().slice(0, 60));
+    let rate = null;
+    if (!pcts.length || pcts.length > 6 || !pcts.every((p) => /^\d{1,3}(\.\d{1,4})?$/.test(p) && Number(p) > 0 && Number(p) <= 100)) {
+      problems.push('Rate: one percentage (e.g. 1) or several multiplied in order (e.g. 7 x 14 x 1), each above 0 and at most 100, up to 4 decimals.');
+    } else {
+      rate = rateFromPercents(pcts);
+      if ((rate.split('.')[1] || '').length > 12) { problems.push('Rate has too many decimal places.'); rate = null; }
+    }
+    const factors = rate ? JSON.stringify(pcts.map((p, i) => ({ pct: p, label: labels[i] || '' }))) : null;
     if (!b.name || !b.legal_basis) problems.push('Name and legal basis (ordinance / regulation) are required.');
     if (!['LGU', 'BIR'].includes(b.authority)) problems.push('Choose LGU or BIR.');
     if (!Object.keys(reports.TAX_BASES).includes(b.tax_base)) problems.push('Choose a tax base.');
-    if (!(rate > 0 && rate < 1)) problems.push('Rate must be between 0 and 100%.');
+    if (rate !== null && !(Number(rate) > 0 && Number(rate) < 1)) problems.push('The combined rate must be between 0 and 100%.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(b.effective_from || '')) problems.push('Effective-from date is required.');
     if (problems.length) {
       const rules = await db.query('SELECT * FROM tax_rules ORDER BY effective_from DESC');
@@ -165,10 +175,10 @@ router.post('/tax-rules', requireRole('admin'), async (req, res, next) => {
     }
     const [ins] = await db.pool.query('INSERT INTO tax_rules SET ?', [{
       name: b.name.slice(0, 120), authority: b.authority, lgu: (b.lgu || '').slice(0, 120) || null, legal_basis: b.legal_basis.slice(0, 200),
-      tax_base: b.tax_base, rate: rate.toFixed(5), effective_from: b.effective_from,
+      tax_base: b.tax_base, rate, factors, effective_from: b.effective_from,
       effective_to: /^\d{4}-\d{2}-\d{2}$/.test(b.effective_to || '') ? b.effective_to : null, created_by: req.session.user.id,
     }]);
-    await audit(req, 'tax_rule_created', 'tax_rule', ins.insertId, { name: b.name, base: b.tax_base, rate: rate.toFixed(5), from: b.effective_from });
+    await audit(req, 'tax_rule_created', 'tax_rule', ins.insertId, { name: b.name, base: b.tax_base, rate, factors, from: b.effective_from });
     res.redirect('/tax-rules');
   } catch (e) { next(e); }
 });

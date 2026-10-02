@@ -10,6 +10,7 @@ const config = require('./config');
 const db = require('./db');
 const { csrf, ROLE_LABEL } = require('./auth');
 const { peso } = require('./money');
+const reports = require('./reports');
 const { ready } = require('./crypto');
 
 const app = express();
@@ -49,6 +50,8 @@ app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   res.locals.arena = config.arenaName;
   res.locals.peso = peso;
+  res.locals.rateText = reports.rateText;
+  res.locals.formulaText = reports.formulaText;
   res.locals.ROLE_LABEL = ROLE_LABEL;
   res.locals.path = req.path;
   res.set('Cache-Control', 'no-store');

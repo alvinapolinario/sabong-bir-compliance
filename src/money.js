@@ -46,4 +46,37 @@ function percentOf(c, rate) {
   return neg ? -q : q;
 }
 
-module.exports = { cents, fmt, peso, percentOf };
+/** Trim a decimal string: "0.009800000000" -> "0.0098", "1.000" -> "1". */
+function trimDecimal(s) {
+  s = String(s);
+  return s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, '') : s;
+}
+
+/**
+ * Exact product of percentages as a rate (fraction) decimal string, e.g.
+ * ["7", "14", "1"] -> "0.000098". No rounding: every step is kept exactly and
+ * only the final tax is rounded to the centavo (percentOf).
+ */
+function rateFromPercents(pcts) {
+  let num = 1n;
+  let scale = 0;
+  for (const p of pcts) {
+    const m = /^(\d+)(?:\.(\d+))?$/.exec(String(p).trim());
+    if (!m) throw new Error(`Not a percentage: ${p}`);
+    num *= BigInt(m[1] + (m[2] || ''));
+    scale += (m[2] || '').length + 2; // + 2: percent -> fraction
+  }
+  const digits = num.toString().padStart(scale + 1, '0');
+  return trimDecimal(scale ? `${digits.slice(0, -scale)}.${digits.slice(-scale)}` : digits);
+}
+
+/** A rate (fraction, decimal string) shown as an exact percentage: "0.000098" -> "0.0098". */
+function ratePercent(rate) {
+  const m = /^(\d+)(?:\.(\d+))?$/.exec(trimDecimal(String(rate).trim()));
+  if (!m) return String(rate);
+  const frac = (m[2] || '').padEnd(2, '0');
+  const whole = (BigInt(m[1] + frac.slice(0, 2))).toString();
+  return trimDecimal(frac.length > 2 ? `${whole}.${frac.slice(2)}` : whole);
+}
+
+module.exports = { cents, fmt, peso, percentOf, rateFromPercents, ratePercent, trimDecimal };
