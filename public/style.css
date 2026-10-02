@@ -64,3 +64,9 @@ button.danger { background: var(--bad); }
   th { background: #eee !important; }
 }
 @media (max-width: 640px) { .top { padding: 10px 16px; } main { padding: 16px; } }
+
+/* Taxable bets (net bets − draw/cancelled refunds): highlighted wherever shown. */
+.stat.taxable { background: #dcfce7; border-color: #16a34a; }
+.stat.taxable span, .stat.taxable b { color: #14532d; }
+td.taxable-cell { background: #dcfce7; color: #14532d; font-weight: 700; }
+@media print { .stat.taxable, td.taxable-cell { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }

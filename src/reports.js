@@ -8,9 +8,24 @@ const TAX_BASES = {
   commission: 'Commission at the event rate',
   net_bets: 'Net bets (after voids)',
   gross_bets: 'Gross bets (before voids)',
+  taxable_bets: 'Taxable bets (net bets − draw/cancelled refunds)',
 };
 
-const BASE_SHORT = { house_take: 'House take', commission: 'Commission', net_bets: 'Net bets', gross_bets: 'Gross bets' };
+const BASE_SHORT = { house_take: 'House take', commission: 'Commission', net_bets: 'Net bets', gross_bets: 'Gross bets', taxable_bets: 'Taxable bets' };
+
+/**
+ * Taxable bets in centavos: bets on fights that had a winner (net bets minus the
+ * draw/cancelled pools refunded) = the pool the commission is taken from
+ * = winnings + commission + rounding. Works on report rows and sealed totals.
+ */
+function taxableCents(r) {
+  return cents(r.winnings) + cents(r.commission) + cents(r.breakage);
+}
+function taxableBets(r) { return fmt(taxableCents(r)); }
+
+function baseCents(report, base) {
+  return base === 'taxable_bets' ? taxableCents(report) : cents(report[base]);
+}
 
 function factorsOf(rule) {
   if (!rule.factors) return null;
@@ -41,7 +56,7 @@ async function rulesFor(date) {
 async function taxesFor(report) {
   const rules = await rulesFor(report.event_date);
   return rules.map((r) => {
-    const base = cents(report[r.tax_base]);
+    const base = baseCents(report, r.tax_base);
     const tax = base > 0n ? percentOf(base, r.rate) : 0n;
     return { rule: r, base: fmt(base), tax: fmt(tax) };
   });
@@ -56,10 +71,12 @@ async function monthly(month) {
      FROM event_reports r JOIN packages p ON p.id = r.package_id
      WHERE r.event_date BETWEEN ? AND ? ORDER BY r.event_date, p.sequence_no`, [from, to]);
 
-  const totals = Object.fromEntries(MONEY_COLS.map((k) => [k, 0n]));
+  const totals = Object.fromEntries([...MONEY_COLS, 'taxable_bets'].map((k) => [k, 0n]));
   const taxTotals = new Map();
   for (const e of events) {
     for (const k of MONEY_COLS) totals[k] += cents(e[k]);
+    e.taxable_bets = taxableBets(e);
+    totals.taxable_bets += taxableCents(e);
     e.taxes = await taxesFor(e);
     for (const t of e.taxes) {
       const key = t.rule.id;
@@ -88,11 +105,11 @@ async function monthly(month) {
 
 function csvMonthly(r) {
   const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const head = ['Date', 'Event', 'Origin', 'Package', 'Seal code', 'Fights', ...MONEY_COLS.map((k) => k.replace(/_/g, ' ')), ...r.taxTotals.map((t) => `Tax: ${t.rule.name}`)];
+  const head = ['Date', 'Event', 'Origin', 'Package', 'Seal code', 'Fights', ...MONEY_COLS.map((k) => k.replace(/_/g, ' ')), 'taxable bets', ...r.taxTotals.map((t) => `Tax: ${t.rule.name}`)];
   const rows = r.events.map((e) => [e.event_date, e.event_name, e.origin === 'legacy' ? 'LEGACY (reconstructed from backup)' : 'Live seal', `${e.origin === 'legacy' ? 'L' : 'S'}${String(e.sequence_no).padStart(4, '0')}`, e.seal_code, e.fights_total,
-    ...MONEY_COLS.map((k) => e[k]), ...r.taxTotals.map((t) => (e.taxes.find((x) => x.rule.id === t.rule.id) || {}).tax || '0.00')]);
-  const total = ['TOTAL', '', '', '', '', r.events.reduce((a, e) => a + e.fights_total, 0), ...MONEY_COLS.map((k) => r.totals[k]), ...r.taxTotals.map((t) => t.tax)];
+    ...MONEY_COLS.map((k) => e[k]), e.taxable_bets, ...r.taxTotals.map((t) => (e.taxes.find((x) => x.rule.id === t.rule.id) || {}).tax || '0.00')]);
+  const total = ['TOTAL', '', '', '', '', r.events.reduce((a, e) => a + e.fights_total, 0), ...MONEY_COLS.map((k) => r.totals[k]), r.totals.taxable_bets, ...r.taxTotals.map((t) => t.tax)];
   return [head, ...rows, total].map((row) => row.map(esc).join(',')).join('\r\n') + '\r\n';
 }
 
-module.exports = { monthly, csvMonthly, taxesFor, TAX_BASES, MONEY_COLS, rateText, formulaText };
+module.exports = { monthly, csvMonthly, taxesFor, TAX_BASES, MONEY_COLS, rateText, formulaText, taxableBets };

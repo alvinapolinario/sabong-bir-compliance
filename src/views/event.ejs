@@ -23,6 +23,7 @@
   <div class="stat"><span>Voided (<%= x.voids_count || 0 %>)</span><b><%= peso(t.voided_bets) %></b></div>
   <div class="stat"><span>Net bets</span><b><%= peso(t.net_bets) %></b></div>
   <div class="stat"><span>Refunds (draw / cancelled)</span><b><%= peso(t.refunds) %></b></div>
+  <div class="stat taxable"><span>Taxable bets (net − refunds)</span><b><%= peso(taxableBets(t)) %></b></div>
   <div class="stat"><span>Winnings due</span><b><%= peso(t.winnings) %></b></div>
   <div class="stat"><span>Commission at <%= pct %>%</span><b><%= peso(t.commission) %></b></div>
   <div class="stat"><span>Rounding / odds adjustment</span><b class="<%= Number(t.breakage) < 0 ? 'neg' : '' %>"><%= peso(t.breakage) %></b></div>

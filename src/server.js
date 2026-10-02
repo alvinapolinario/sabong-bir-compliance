@@ -52,6 +52,7 @@ app.use((req, res, next) => {
   res.locals.peso = peso;
   res.locals.rateText = reports.rateText;
   res.locals.formulaText = reports.formulaText;
+  res.locals.taxableBets = reports.taxableBets;
   res.locals.ROLE_LABEL = ROLE_LABEL;
   res.locals.path = req.path;
   res.set('Cache-Control', 'no-store');

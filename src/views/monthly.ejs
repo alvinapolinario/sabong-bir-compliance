@@ -17,6 +17,7 @@
 <div class="grid">
   <div class="stat"><span>Gross bets</span><b><%= peso(r.totals.gross_bets) %></b></div>
   <div class="stat"><span>Net bets</span><b><%= peso(r.totals.net_bets) %></b></div>
+  <div class="stat taxable"><span>Taxable bets (net − refunds)</span><b><%= peso(r.totals.taxable_bets) %></b></div>
   <div class="stat"><span>Commission</span><b><%= peso(r.totals.commission) %></b></div>
   <div class="stat"><span>House take (actual)</span><b><%= peso(r.totals.house_take) %></b></div>
   <div class="stat"><span>Paid to bettors</span><b><%= peso(r.totals.paid) %></b></div>
@@ -40,17 +41,17 @@
 
 <h2>Events</h2>
 <div class="wrap"><table>
-  <thead><tr><th>Date</th><th>Event</th><th>Package</th><th>Seal code</th><th class="n">Fights</th><th class="n">Gross</th><th class="n">Net</th><th class="n">Commission</th><th class="n">House take</th><th class="n">Paid</th><th class="n">Unclaimed</th></tr></thead>
+  <thead><tr><th>Date</th><th>Event</th><th>Package</th><th>Seal code</th><th class="n">Fights</th><th class="n">Gross</th><th class="n">Net</th><th class="n">Taxable</th><th class="n">Commission</th><th class="n">House take</th><th class="n">Paid</th><th class="n">Unclaimed</th></tr></thead>
   <tbody>
   <% r.events.forEach(e => { %>
     <tr><td><%= e.event_date %></td><td><a href="/events/<%= e.package_id %>"><%= e.event_name %></a><% if (e.origin === 'legacy') { %> <span class="badge b-warn" title="Reconstructed after the event from a database backup">Legacy</span><% } %></td><td><%= e.origin === 'legacy' ? 'L' : 'S' %><%= String(e.sequence_no).padStart(4, '0') %></td>
-      <td class="seal"><%= e.seal_code %></td><td class="n"><%= e.fights_total %></td><td class="n"><%= peso(e.gross_bets) %></td><td class="n"><%= peso(e.net_bets) %></td>
+      <td class="seal"><%= e.seal_code %></td><td class="n"><%= e.fights_total %></td><td class="n"><%= peso(e.gross_bets) %></td><td class="n"><%= peso(e.net_bets) %></td><td class="n taxable-cell"><%= peso(e.taxable_bets) %></td>
       <td class="n"><%= peso(e.commission) %></td><td class="n"><%= peso(e.house_take) %></td><td class="n"><%= peso(e.paid) %></td><td class="n"><%= peso(e.unclaimed) %></td></tr>
   <% }) %>
-  <% if (!r.events.length) { %><tr><td colspan="11" class="note">No events in this month.</td></tr><% } %>
+  <% if (!r.events.length) { %><tr><td colspan="12" class="note">No events in this month.</td></tr><% } %>
   </tbody>
   <% if (r.events.length) { %><tfoot><tr><td colspan="4">Total</td><td class="n"><%= r.events.reduce((a, e) => a + e.fights_total, 0) %></td>
-    <td class="n"><%= peso(r.totals.gross_bets) %></td><td class="n"><%= peso(r.totals.net_bets) %></td><td class="n"><%= peso(r.totals.commission) %></td>
+    <td class="n"><%= peso(r.totals.gross_bets) %></td><td class="n"><%= peso(r.totals.net_bets) %></td><td class="n taxable-cell"><%= peso(r.totals.taxable_bets) %></td><td class="n"><%= peso(r.totals.commission) %></td>
     <td class="n"><%= peso(r.totals.house_take) %></td><td class="n"><%= peso(r.totals.paid) %></td><td class="n"><%= peso(r.totals.unclaimed) %></td></tr></tfoot><% } %>
 </table></div>
 <div class="print-only" style="margin-top:40px">Prepared by: ____________________ &nbsp;&nbsp; Reviewed by (Treasury): ____________________ &nbsp;&nbsp; Date: __________</div>

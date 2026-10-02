@@ -29,6 +29,14 @@ tfoot td { font-weight: 700; background: #fafafa; }
 .toolbar button, .toolbar a { font: inherit; padding: 6px 14px; border-radius: 6px; border: 1px solid #0b3d6e; background: #0b3d6e; color: #fff; cursor: pointer; text-decoration: none; }
 .toolbar a { background: #fff; color: #0b3d6e; }
 .foot { margin-top: 16px; color: var(--muted); font-size: 10px; }
+/* Taxable bets and the draw/cancelled fights left out of them. */
+.row.taxable { background: #dcfce7; border-bottom: 1px solid #16a34a; padding: 3px 4px; color: #14532d; }
+.row.taxable b { color: #14532d; }
+td.taxable-cell { background: #dcfce7; color: #14532d; font-weight: 700; }
+tr.refunded td { background: #dcfce7; }
+.legend { margin: 4px 0 0; font-size: 10px; color: var(--muted); }
+.legend .swatch { display: inline-block; width: 10px; height: 10px; background: #dcfce7; border: 1px solid #16a34a; vertical-align: -1px; }
+.row.taxable, td.taxable-cell, tr.refunded td, .legend .swatch { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 @media print {
   body { padding: 0; font-size: 9.5px; }
   .toolbar { display: none; }
